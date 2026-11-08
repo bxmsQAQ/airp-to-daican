@@ -1,89 +1,173 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIRP 角色替换工具</title>
+    <title>AIRP 角色代餐替换工具</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 680px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px 16px;
+            background-color: #fafafa;
+            color: #333;
             line-height: 1.6;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            text-align: center;
+            color: #111;
+        }
+        .intro-box {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            color: #555;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .intro-box ul {
+            margin: 6px 0 6px 20px;
         }
         textarea {
             width: 100%;
-            height: 200px;
-            margin-bottom: 10px;
-            padding: 10px;
-            box-sizing: border-box;
+            height: 180px;
+            padding: 12px;
+            font-size: 0.95rem;
+            border: 1.5px solid #d1d5db;
+            border-radius: 10px;
+            outline: none;
+            resize: vertical;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            border-color: #4CAF50;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0 16px;
         }
         button {
-            padding: 10px 15px;
+            flex: 1;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
             background-color: #4CAF50;
             color: white;
-            border: none;
-            cursor: pointer;
         }
-        button:hover {
-            background-color: #45a049;
+        .btn-primary:active {
+            background-color: #3e8e41;
+        }
+        .btn-copy {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-copy:active {
+            background-color: #2563eb;
+        }
+        .result-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: #4b5563;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         #result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
+            min-height: 120px;
+            padding: 14px;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
             white-space: pre-wrap;
-        }
-        .instructions {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            word-break: break-all;
+            font-size: 0.95rem;
+            color: #1f2937;
+            user-select: text;
+            -webkit-user-select: text;
         }
     </style>
 </head>
 <body>
-    <h1>AIRP 角色替换工具</h1>
+    <h1>AIRP 角色代餐替换工具</h1>
 
-    <div class="instructions">
-        <p>将AI RP对话中的角色标记替换为简化格式：</p>
+    <div class="intro-box">
+        <p><strong>智能替换规则：</strong></p>
         <ul>
-            <li><strong>char</strong> → <strong>A</strong></li>
-            <li><strong>{{char}}</strong> → <strong>A</strong></li>
-            <li><strong>user</strong> → <strong>B</strong></li>
-            <li><strong>{{user}}</strong> → <strong>B</strong></li>
+            <li><code>{{char}}</code>、<code>char</code>、<code>assistant</code> ➔ <strong>A</strong></li>
+            <li><code>{{user}}</code>、<code>user</code> ➔ <strong>B</strong></li>
         </ul>
-        <p>适用于airp番外/小剧场对话的AI代餐处理</p>
+        <p style="color: #888; font-size: 0.82rem;">（已做词界保护，不会误伤 character、username 等日常英文）</p>
     </div>
 
-    <textarea id="inputText" placeholder="粘贴你的airp对话内容..."></textarea>
-    <br>
-    <button onclick="replaceRoles()">替换角色标记</button>
-    <div id="result"></div>
+    <textarea id="inputText" placeholder="直接粘贴你的 airp 番外 / 小剧场指令..."></textarea>
+    
+    <div class="btn-group">
+        <button class="btn-primary" onclick="replaceRoles()">✨ 一键替换为 A / B</button>
+        <button class="btn-copy" onclick="copyResult()">📋 复制结果</button>
+    </div>
+
+    <div class="result-title">
+        <span>替换结果预览：</span>
+        <span id="copyTip" style="color: #10b981; font-weight: normal; font-size: 0.85rem; display: none;">已复制到剪贴板！</span>
+    </div>
+    <div id="result">暂无内容，请在上方粘贴文字并点击替换~</div>
 
     <script>
         function replaceRoles() {
-            const inputText = document.getElementById('inputText').value;
-            const resultDiv = document.getElementById('result');
+            const input = document.getElementById('inputText').value;
+            if (!input.trim()) {
+                alert('请先粘贴内容哦！');
+                return;
+            }
 
-            // 替换规则：char和{{char}}都替换为A，user和{{user}}都替换为B
-            const outputText = inputText
-                .replace(/char:/g, 'A:')
-                .replace(/{{char}}:/g, 'A:')
-                .replace(/user:/g, 'B:');
-                .replace(/{{user}}:/g, 'B:');
+            // 1. 先替换带大括号的 {{char}} / {{user}}（忽略大小写）
+            // 2. 再替换独立的单词 char / assistant / user（避免误伤 character）
+            let output = input
+                .replace(/\{\{\s*char\s*\}\}/gi, 'A')
+                .replace(/\{\{\s*user\s*\}\}/gi, 'B')
+                .replace(/\bchar\b/gi, 'A')
+                .replace(/\bassistant\b/gi, 'A')
+                .replace(/\buser\b/gi, 'B');
 
-            resultDiv.textContent = outputText;
+            document.getElementById('result').textContent = output;
         }
 
-        // 快捷键Ctrl+Enter触发替换
-        document.getElementById('inputText').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                replaceRoles();
+        function copyResult() {
+            const resultText = document.getElementById('result').textContent;
+            if (!resultText || resultText === '暂无内容，请在上方粘贴文字并点击替换~') {
+                alert('还没有可以复制的内容！');
+                return;
             }
-        });
+
+            navigator.clipboard.writeText(resultText).then(() => {
+                const tip = document.getElementById('copyTip');
+                tip.style.display = 'inline';
+                setTimeout(() => {
+                    tip.style.display = 'none';
+                }, 2000);
+            }).catch(() => {
+                alert('复制失败，请长按下方文本手动复制');
+            });
+        }
     </script>
 </body>
 </html>
